@@ -279,6 +279,74 @@ describe('typings.test.js', function () {
         });
     });
 
+    config.parallel('compatibility with json-schema-to-ts', () => {
+        describe('positive', () => {
+            it('should allow creating generic schema based on a model', async () => {
+                const code = codeBase + `
+                    import { FromSchema } from 'json-schema-to-ts';
+
+                    (async() => {
+                        const databaseCreator: RxDatabaseCreator = {
+                            name: 'mydb',
+                            adapter: 'memory',
+                            multiInstance: false,
+                            ignoreDuplicate: false
+                        };
+                        const myDb: RxDatabase = await createRxDatabase(databaseCreator);
+
+                        const minimalHuman = ${JSON.stringify(schemas.humanMinimal)} as const;
+
+                        type FromSchemaDocType = FromSchema<typeof minimalHuman>;
+
+                        const myCollection: RxCollection<any> = await myDb.collection<DefaultDocType>({
+                            name: 'humans',
+                            schema: minimalHuman as RxJsonSchema<FromSchemaDocType>,
+                        });
+
+                        await myDb.destroy();
+                    })();
+                `;
+                await transpileCode(code);
+            });
+        });
+
+        describe('negative', () => {
+            it('should not allow wrong properties when passing a model', async () => {
+                const brokenCode = codeBase + `
+                    import { FromSchema } from 'json-schema-to-ts';
+
+                    (async() => {
+                        const databaseCreator: RxDatabaseCreator = {
+                            name: 'mydb',
+                            adapter: 'memory',
+                            multiInstance: false,
+                            ignoreDuplicate: false
+                        };
+                        const myDb: RxDatabase = await createRxDatabase(databaseCreator);
+
+                        const minimalHuman = ${JSON.stringify(schemas.humanMinimalBroken)} as const;
+
+                        type FromSchemaDocType = FromSchema<typeof minimalHuman>;
+
+                        const myCollection: RxCollection<any> = await myDb.collection<DefaultDocType>({
+                            name: 'humans',
+                            schema: minimalHuman as RxJsonSchema<FromSchemaDocType>,
+                        });
+
+                        await myDb.destroy();
+                    })();
+                `;
+                let thrown = false;
+                try {
+                    await transpileCode(brokenCode);
+                } catch (err) {
+                    thrown = true;
+                }
+                assert.ok(thrown);
+            });
+        });
+    });
+
     config.parallel('collection', () => {
         describe('positive', () => {
             it('collection-creation', async () => {

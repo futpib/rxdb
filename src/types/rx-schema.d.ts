@@ -55,7 +55,7 @@ export interface PrimaryProperty extends TopLevelProperty {
     primary: true;
 }
 
-export declare class RxJsonSchema<RxDocType = any> {
+export declare type RxJsonSchema<RxDocType = any> = Readonly<{
     title?: string;
     description?: string;
     version: number;
@@ -78,4 +78,4 @@ export declare class RxJsonSchema<RxDocType = any> {
     attachments?: {
         encrypted?: boolean;
     };
-}
+}>
